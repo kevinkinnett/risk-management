@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, AppBar, Toolbar, Typography, Button, IconButton, Container } from '@mui/material';
-import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { Brightness4, Brightness7, ExitToApp } from '@mui/icons-material';
 import { getStoredDarkMode, setStoredDarkMode, setStoredCurrentPage } from './utils/localStorage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
 import Scenarios from './pages/Scenarios';
 import Plans from './pages/Plans';
@@ -13,6 +15,7 @@ import EmergencyContacts from './pages/EmergencyContacts';
 
 function AppContent() {
   const location = useLocation();
+  const { user, logout, loading } = useAuth();
   const [darkMode, setDarkMode] = useState(() => getStoredDarkMode());
 
   const theme = createTheme({
@@ -27,10 +30,27 @@ function AppContent() {
     setStoredDarkMode(newDarkMode);
   };
 
+  const handleLogout = async () => {
+    await logout();
+  };
+
   // Store current page when location changes
   useEffect(() => {
     setStoredCurrentPage(location.pathname);
   }, [location.pathname]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Login />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -48,6 +68,9 @@ function AppContent() {
           <Button color="inherit" component={Link} to="/contacts">Contacts</Button>
           <IconButton color="inherit" onClick={toggleDarkMode}>
             {darkMode ? <Brightness7 /> : <Brightness4 />}
+          </IconButton>
+          <IconButton color="inherit" onClick={handleLogout}>
+            <ExitToApp />
           </IconButton>
         </Toolbar>
       </AppBar>
@@ -67,9 +90,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 
